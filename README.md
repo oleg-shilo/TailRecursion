@@ -88,18 +88,19 @@ stack.Exit(f);
 //instead of 
 return f;
 ```
-It would be interesting if C# follows the steps of F# and implements explicit recursion keyword (e.g. `tail`) to force tail-call optimization upon user request from code. The ideal approach for this wouold be a syntactic sugar (as many other C# syntax features). Something like this:
+It would be interesting if C# follows the steps of F# and implements an explicit recursion keyword (e.g. `rec`) to force tail-call optimization upon user request from code. The ideal approach for this wouold be a syntactic sugar (as with many current C# syntax features). Something like this:
 ```C#
-tail void Fib(int fnext, int f, int count)
+rec void Fib(int fnext, int f, int count)
 {
     if (count == 0)
         yield return f;
     else
-        tail Fib(fnext + f, fnext, count - 1);
+        rec Fib(fnext + f, fnext, count - 1);
 }
 ...
 Func<int, int> fib = n => Fib(1, 0, n);
 fib(5);
 ```
+But let's face it, the chances of this are very slim :) 
 
 ... _in progress_ ...
