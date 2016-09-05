@@ -22,12 +22,12 @@ public class ScriptClass
 
     #region
     // potential syntactic sugar
-    //tail void Fib(int fnext, int f, int count)
+    //rec void Fib(int fnext, int f, int count)
     //{
     //    if (count == 0)
     //        yield return f;
     //    else
-    //        tail Fib(fnext + f, fnext, count - 1);
+    //        rec Fib(fnext + f, fnext, count - 1);
     //}
     //
     //tail void Fib(int fnext, int f, int count)

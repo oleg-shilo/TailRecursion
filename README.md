@@ -103,4 +103,44 @@ fib(5);
 ```
 But let's face it, the chances of this are very slim :) 
 
-... _in progress_ ...
+# Code
+
+The code contains various samples, which include the code above. The typical use case of recursion with __Tail Recursion__ is a creation of a 'recursive' delegate (either from member method or from lambda) and invoke it when required.
+```C#
+var wait = Recursion.Action<int>((count, stack) =>
+                                 {
+                                     if (count == 0)
+                                     {
+                                         stack.Exit();
+                                     }
+                                     else
+                                     {
+                                         Thread.Sleep(1000);
+                                         WriteLine("tick...");
+                                         stack.Push(count - 1);
+                                     }
+                                 });
+
+wait(5); //wait fro 5 seconds
+```
+An alternative approach is to call the provided recursive routine immediately without building and storing the delegate:
+```C#
+//visit all sub directories and collect all files
+var files = new List<string>();
+
+Recursion.Call(new Queue<string>().Add(userDocsDir),
+               (Queue<string> dirs, StackContext stack) =>
+               {
+                   if (dirs.Any())
+                   {
+                       string dir = dirs.Dequeue();
+         
+                       files.AddRange(Directory.GetFiles(dir));
+                       dirs.AddRange(Directory.GetDirectories(dir));
+         
+                       stack.Push(dirs);
+                   }
+                   else
+                       stack.Exit();
+               });
+```
