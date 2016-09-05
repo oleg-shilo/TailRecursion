@@ -141,25 +141,24 @@ public class ScriptClass
     {
         // Will take a collection of dirs to visit, "basket" (list) to collect all files
         // and return array of collected files
-        var getFilesRec = Recursion.Func<Queue<string>, List<string>, string[]>(
-           (dirs, files, stack) =>
-           {
-               if (dirs.Any())
-               {
-                   stack.Exit(files.ToArray());
-               }
-               else
-               {
-                   string dir = dirs.Dequeue();
+        var getFilesRec = Recursion.Func<List<string>, List<string>, string[]>(
+                                         (dirs, files, stack) =>
+                                         {
+                                             var dir = dirs.Pop();
 
-                   files.AddRange(Directory.GetFiles(dir));
-                   dirs.AddRange(Directory.GetDirectories(dir));
+                                             if (dir != null)
+                                             {
+                                                 files.AddRange(Directory.GetFiles(dir));
+                                                 dirs.AddRange(Directory.GetDirectories(dir));
 
-                   stack.Push(dirs, files);
-               }
-           });
+                                                 stack.Push(dirs, files);
+                                             }
+                                             else
+                                                 stack.Exit(files.ToArray());
+                                         });
 
-        var getFiles = new Func<string, string[]>(path => getFilesRec(new Queue<string>(new[] { path }), new List<string>()));
+        var getFiles = new Func<string, string[]>(path => getFilesRec(new List<string>(new[] { path }),
+                                                                      new List<string>()));
 
         var dirFiles = getFiles(userDocsDir);
     }
