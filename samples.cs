@@ -1,4 +1,5 @@
-////css_args /ac
+//css_inc recursion.cs
+using Microsoft.CSharp;
 using System;
 using System.Collections.Generic;
 using static System.Console;
@@ -11,72 +12,9 @@ using System.Dynamic;
 
 public class ScriptClass
 {
-    public static int Main(string[] args)
-    {
-        do
-        {
-            new ScriptClass().main();
-            //GC.Collect();
-        }
-        while (ReadLine() != "x");
-        return 0;
-    }
-
-    #region
-    // potential syntactic sugar
-    //tail void Fib(int fnext, int f, int count)
-    //{
-    //    if (count == 0)
-    //        yield return f;
-    //    else
-    //        tail Fib(fnext + f, fnext, count - 1);
-    //}
-    //
-    //tail void Fib(int fnext, int f, int count)
-    //{
-    //    if (count == 0)
-    //        break f;
-    //    else
-    //        repeat Fib(fnext + f, fnext, count - 1);
-    //}
-    #endregion
-
-    void FibImpl(int fnext, int f, int count, StackContext stack)
-    {
-        if (count == 0)
-            stack.Exit(f);
-        else
-            stack.Push(fnext + f, fnext, count - 1);
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////
-
-    Action BuildPrinter()
-    {
-        return () => WriteLine("I am a printer");
-    }
-
-    int Recurse1(int i)
-    {
-        if (i < 100000)
-            return Recurse1(i + 1);
-        else
-            return i;
-    }
-
-    void Recurse(int i, StackContext context)
-    {
-        if (i < 100000)
-            context.Call(i + 1);
-        else
-            context.Exit(i);
-    }
-
-    void main()
+    public static void Main()
     {
         {
-            var rec = Recursion.Func<int, int>(Recurse);
-
             var rec2 = Recursion.Func<int, int>(
                                      (i, stack) =>
                                      {
@@ -94,11 +32,7 @@ public class ScriptClass
                                                    stack.Exit(i);
                                            });
 
-            //dynamic CallData = new ExpandoObject();
-            //var eeet = CallData.Con .Test;
-            //var dirs = new List
-
-            var root = @"C:\Users\osh\Documents\C# Scripts";
+            var root = @"C:\Users\%username%\Documents\C# Scripts".ExpandEnvVars();
             var files = new List<string>();
 
             Recursion.Call(new Queue<string>(new[] { root }),
@@ -117,40 +51,6 @@ public class ScriptClass
                                   stack.Exit();
                           });
 
-            dynamic wqet = 9;
-            var sw = new Stopwatch();
-
-            dynamic recursive = new ExpandoObject();
-
-            recursive.Print = new Action<string>((msg) => WriteLine(msg));
-            recursive.Print("gfd");
-
-            sw.Restart();
-
-            int t = (int)Recursion.Call(1, Recurse);
-            sw.Stop();
-            WriteLine(sw.Elapsed);
-
-            sw.Restart();
-
-            var ttt = Recursion.Call(1, Recurse);
-            sw.Stop();
-            WriteLine(sw.Elapsed);
-
-            sw.Restart();
-            rec(4);
-            sw.Stop();
-            WriteLine(sw.Elapsed);
-
-            GC.Collect();
-
-            sw.Restart();
-            rec2(4);
-            sw.Stop();
-            WriteLine(sw.Elapsed);
-
-            return;
-            //Recurse(0); return;
 
             Action<int, int, string, int, int, int, int, int, int, int, int, int> h = null;
 
@@ -177,27 +77,6 @@ public class ScriptClass
                                   else
                                       stack.Push(n - 1);
                               });
-
-            var countDown = Recursion.Func<int, Func<Action>, Action>(
-                                               (n, builder, stack) =>
-                                               {
-                                                   WriteLine("Enter");
-
-                                                   if (n == 0)
-                                                   {
-                                                       var act = builder();
-                                                       stack.Exit(act);
-                                                   }
-                                                   else
-                                                   {
-                                                       stack.Push(n - 1, builder);
-                                                   }
-                                                   WriteLine("Exit");
-                                               });
-
-            Action print = countDown(4, BuildPrinter);
-
-            print();
         }
 
         //return;
@@ -263,6 +142,51 @@ public class ScriptClass
 
         var input = new Queue<string>(new[] { @"C:\Users\%username%\Documents\C# Scripts".ExpandEnvVars() });
         printFiles(input);
+    }
+
+    #region
+    // potential syntactic sugar
+    //tail void Fib(int fnext, int f, int count)
+    //{
+    //    if (count == 0)
+    //        yield return f;
+    //    else
+    //        tail Fib(fnext + f, fnext, count - 1);
+    //}
+    //
+    //tail void Fib(int fnext, int f, int count)
+    //{
+    //    if (count == 0)
+    //        break f;
+    //    else
+    //        repeat Fib(fnext + f, fnext, count - 1);
+    //}
+    #endregion
+
+    void FibImpl(int fnext, int f, int count, StackContext stack)
+    {
+        if (count == 0)
+            stack.Exit(f);
+        else
+            stack.Push(fnext + f, fnext, count - 1);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////
+
+    void RawRecursion()
+    {
+        Func<int, int, int, int> fib_iter = null;
+        fib_iter = (fnext, f, count) =>
+                {
+                    if (count == 0)
+                        return f;
+                    else
+                        return fib_iter((fnext + f), fnext, (count - 1));
+                };
+
+        Func<int, int> fib = n => fib_iter(1, 0, n);
+
+        fib(5);
     }
 }
 

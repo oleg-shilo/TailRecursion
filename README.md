@@ -36,7 +36,6 @@ fib_iter = (fnext, f, count) =>
                     return fib_iter(fnext + f, fnext, count - 1);
             };
 
-
 Func<int, int> fib = n => fib_iter(1, 0, n);
 
 fib(5);

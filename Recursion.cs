@@ -146,16 +146,16 @@ namespace TailCall
                 switch (args.Length)
                 {
                     case 0: routine(context); break;
-                    case 1: routine((dynamic) context.nextCallArgs[0], context); break;
-                    case 2: routine((dynamic) context.nextCallArgs[0], (dynamic) context.nextCallArgs[1], context); break;
-                    case 3: routine((dynamic) context.nextCallArgs[0], (dynamic) context.nextCallArgs[1], (dynamic) context.nextCallArgs[2], context); break;
-                    case 4: routine((dynamic) context.nextCallArgs[0], (dynamic) context.nextCallArgs[1], (dynamic) context.nextCallArgs[2], (dynamic) context.nextCallArgs[3], context); break;
-                    case 5: routine((dynamic) context.nextCallArgs[0], (dynamic) context.nextCallArgs[1], (dynamic) context.nextCallArgs[2], (dynamic) context.nextCallArgs[3], (dynamic) context.nextCallArgs[4], context); break;
+                    case 1: routine((dynamic)context.nextCallArgs[0], context); break;
+                    case 2: routine((dynamic)context.nextCallArgs[0], (dynamic)context.nextCallArgs[1], context); break;
+                    case 3: routine((dynamic)context.nextCallArgs[0], (dynamic)context.nextCallArgs[1], (dynamic)context.nextCallArgs[2], context); break;
+                    case 4: routine((dynamic)context.nextCallArgs[0], (dynamic)context.nextCallArgs[1], (dynamic)context.nextCallArgs[2], (dynamic)context.nextCallArgs[3], context); break;
+                    case 5: routine((dynamic)context.nextCallArgs[0], (dynamic)context.nextCallArgs[1], (dynamic)context.nextCallArgs[2], (dynamic)context.nextCallArgs[3], (dynamic)context.nextCallArgs[4], context); break;
                 }
             }
 
             context.IsFirstCall = false;
-            return (T) context.Result;
+            return (T)context.Result;
         }
     }
 
@@ -202,4 +202,3 @@ namespace TailCall
         }
     }
 }
-
