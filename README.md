@@ -1,1 +1,27 @@
-# TailRecursion
+# Tail Recursion
+
+# Background 
+The _Tail Recursion_ problem is not new. As any recursion it represents very intuitive and powerful execution paradigm, which is unfortunately associated with a very serious flaw - potential stack overflow. _Tail Recursion_ on the other hand is a special case of recursion that can be optimized in such a way that stack overflow can be completely eliminated. Some languages recognise this and offer "tail call" optimization in one or another form. Some of them do tail call optimization always (e.g.  Scheme), others under certain conditions (e.g. C#) and some do not support it at all (e.g. Python).
+
+CLR perfectly capable of "tailing" the calls. It processes a special IL instruction for this - `.tail`. F# interpreter/compiler takes advantage of the `.tail` instruction by allowing deterministically request tailing from the user code with the special keyword `rec`. Unfortunately C# doesn't follow the suite. While it perfectly optimises tail-compatible routines in release mode (due to the higher level of optimization associated with the release builds) it doesn't do it for debug mode and even when it does it is still not guaranteed. Thus while C# is definitely capable of tail optimization for all practical reasons it should be treated as a language that is cannot handle tail recursion at compiler level. Thus this non-deterministic nature of C# tail optimization support completely diminishes its benefits.
+
+_The history of .tail and C# is quite interesting. MS was pressed by the developers to implement tail optimization but it fully rejected the proposals due to the implementation difficulties and inability to guarantee no performance cost. From now and then there were reports of "sighting" C# tail optimization either specifically on x64 targets or under other circumstances. Thus currently (Sep 2016) C#6 can definitely compile and optimize tail recursive routines at least in Release configuration for AnyCPU built on x64 machines. But without an official well documented .tail support it is still an exotic feature that hart to rely on._ 
+
+Wikipedia has very good article about the matter: https://en.wikipedia.org/wiki/Tail_call
+
+# Purpose
+Any language that doesn't support tail-call optimization has to rely on user level loop-based technique which is called "trampolining". In fact some compilers implement this very technique under the hood. Though when compiler offers no support for this it is up to developer to implement the technique directly in the code.
+
+Fortunately trampolined recursion algorithm is very simple and described in the numerous online resources:
+https://en.wikipedia.org/wiki/Tail_call
+https://qualityofdata.com/2012/02/03/how-to-run-most-of-the-recursive-functions-iteratively/
+http://www.thomaslevesque.com/2011/09/02/tail-recursion-in-c/
+http://community.bartdesmet.net/blogs/bart/archive/2009/11/08/jumping-the-trampoline-in-c-stack-friendly-recursion.aspx
+Interception technique: http://codereview.stackexchange.com/questions/57839/trampoline-interceptor
+
+Thus for a single one off trampolined recursion it's arguably preferred to do it directly in the code where you need to use it. However if the software solution requires more often recursive behaviour developers can benefit form some sort of generic trampolined recursion solution so there is no need to setup the trampolined infrastructure again and again. This solution is an attempt to bring such a solution to the developers. 
+ 
+# Solution 
+The objective of this exercise was to have a generic tailed recursion that would deterministically emit tailed calls while preserving as much as possible the raw C# recursion syntax. The solution itself is extremely simple and the core routine is a single method of ~20 lines of code. The rest is a call context infrastructure and set of convenient API entry points providing convenient signature obverloads.
+
+... _in progress_ ...
