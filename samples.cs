@@ -3,145 +3,21 @@ using Microsoft.CSharp;
 using System;
 using System.Collections.Generic;
 using static System.Console;
+using static SamplesExtensions;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.IO;
 using TailCall;
 using System.Dynamic;
+using System.Threading;
 
 public class ScriptClass
 {
+    string userDocsDir = @"C:\Users\%username%\Documents".ExpandEnvVars();
+
     public static void Main()
     {
-        {
-            var rec2 = Recursion.Func<int, int>(
-                                     (i, stack) =>
-                                     {
-                                         if (i < 100000)
-                                             stack.Push(i + 1);
-                                         else
-                                             stack.Exit(i);
-                                     });
-
-            var result = Recursion.Call(8, (i, stack) =>
-                                           {
-                                               if (i < 100000)
-                                                   stack.Push(i + 1);
-                                               else
-                                                   stack.Exit(i);
-                                           });
-
-            var root = @"C:\Users\%username%\Documents\C# Scripts".ExpandEnvVars();
-            var files = new List<string>();
-
-            Recursion.Call(new Queue<string>(new[] { root }),
-                          (dirs, stack) =>
-                          {
-                              if (dirs.Any())
-                              {
-                                  string dir = dirs.Dequeue();
-
-                                  files.AddRange(Directory.GetFiles(dir));
-                                  dirs.EnqueueRange(Directory.GetDirectories(dir));
-
-                                  stack.Push(dirs);
-                              }
-                              else
-                                  stack.Exit();
-                          });
-
-
-            Action<int, int, string, int, int, int, int, int, int, int, int, int> h = null;
-
-            var fib_iter = Recursion.Func<int, int, int, int>(
-            (fnext, f, count, stack) =>
-            {
-                if (count == 0)
-                    stack.Exit(f);
-                else
-                    stack.Push(fnext + f, fnext, count - 1);
-            });
-
-            Func<int, int> ifib = n => fib_iter(1, 0, n);
-
-            WriteLine(ifib(1000000));
-            return;
-        }
-
-        {
-            Recursion.Call(8, (n, stack) =>
-                              {
-                                  if (n == 0)
-                                      stack.Exit();
-                                  else
-                                      stack.Push(n - 1);
-                              });
-        }
-
-        //return;
-
-        {
-            var agregate_iter = Recursion.Func<int, int, int>(
-                                               (n, result, stack) =>
-                                               {
-                                                   if (n > 6)
-                                                       stack.Exit(result);
-                                                   else
-                                                       stack.Push(n + 1, result * n);
-                                               });
-            Func<int, int> agregate = n => agregate_iter(n, 1);
-
-            WriteLine(agregate(3));
-        }
-
-        //return;
-
-        var getFilesRec = Recursion.Func<Queue<string>, List<string>, string[]>(
-           (dirs, files, stack) =>
-           {
-               if (dirs.Any())
-               {
-                   stack.Exit(files.ToArray());
-               }
-               else
-               {
-                   string dir = dirs.Dequeue();
-
-                   files.AddRange(Directory.GetFiles(dir));
-                   dirs.EnqueueRange(Directory.GetDirectories(dir));
-
-                   stack.Push(dirs, files);
-               }
-           });
-
-        var getFiles = new Func<string, string[]>(path => getFilesRec(new Queue<string>(new[] { path }), new List<string>()));
-
-        var dirFiles = getFiles(@"C:\Users\%username%\Documents\C# Scripts".ExpandEnvVars());
-
-        var printFiles = Recursion.Action<Queue<string>>(
-          (dirs, stack) =>
-          {
-              if (!dirs.Any())
-              {
-                  stack.Exit();
-              }
-              else
-              {
-                  string dir = dirs.Dequeue();
-
-                  Directory.GetFiles(dir)
-                           .ForEach(WriteLine);
-
-                  Directory.GetDirectories(dir)
-                           .ForEach(dirs.Enqueue);
-
-                  stack.Push(dirs);
-              }
-          });
-
-        var input = new Queue<string>(new[] { @"C:\Users\%username%\Documents\C# Scripts".ExpandEnvVars() });
-        printFiles(input);
     }
 
     #region
@@ -163,16 +39,7 @@ public class ScriptClass
     //}
     #endregion
 
-    void FibImpl(int fnext, int f, int count, StackContext stack)
-    {
-        if (count == 0)
-            stack.Exit(f);
-        else
-            stack.Push(fnext + f, fnext, count - 1);
-    }
-
     ///////////////////////////////////////////////////////////////////////////////////
-
     void RawRecursion()
     {
         Func<int, int, int, int> fib_iter = null;
@@ -188,9 +55,142 @@ public class ScriptClass
 
         fib(5);
     }
+    ///////////////////////////////////////////////////////////////////////////////////
+    void TailedRecursionWithLambda()
+    {
+        var fib_iter = Recursion.Func<int, int, int, int>(
+                         (fnext, f, count, stack) =>
+                         {
+                             if (count == 0)
+                                 stack.Exit(f);
+                             else
+                                 stack.Push(fnext + f, fnext, count - 1);
+                         });
+
+        Func<int, int> fib = n => fib_iter(1, 0, n);
+
+        fib(5);
+    }
+    ///////////////////////////////////////////////////////////////////////////////////
+    void FibImpl(int fnext, int f, int count, StackContext stack)
+    {
+        if (count == 0)
+            stack.Exit(f);
+        else
+            stack.Push(fnext + f, fnext, count - 1);
+    }
+
+    void TailedRecursionWithMethod()
+    {
+        var fib_iter = Recursion.Func<int, int, int, int>(FibImpl);
+
+        Func<int, int> fib = n => fib_iter(1, 0, n);
+
+        fib(5);
+    }
+    ///////////////////////////////////////////////////////////////////////////////////
+    void WaitForNumOfSeconds()
+    {
+        var wait = Recursion.Action<int>((count, stack) =>
+                                         {
+                                             if (count == 0)
+                                             {
+                                                 stack.Exit();
+                                             }
+                                             else
+                                             {
+                                                 Thread.Sleep(1000);
+                                                 WriteLine("tick...");
+                                                 stack.Push(count - 1);
+                                             }
+                                         });
+
+        wait(5);
+    }
+    ///////////////////////////////////////////////////////////////////////////////////
+    void VisitDirs()
+    {
+        var printFiles = Recursion.Action<Queue<string>>(
+                                          (dirs, stack) =>
+                                          {
+                                              if (!dirs.Any())
+                                              {
+                                                  stack.Exit();
+                                              }
+                                              else
+                                              {
+                                                  string dir = dirs.Dequeue();
+
+                                                  Directory.GetFiles(dir)
+                                                           .ForEach(WriteLine);
+
+                                                  Directory.GetDirectories(dir)
+                                                           .ForEach(dirs.Enqueue);
+
+                                                  stack.Push(dirs);
+                                              }
+                                          });
+
+        var dirsToVisit = new Queue<string>()
+                              .Add(userDocsDir);
+
+        printFiles(dirsToVisit);
+    }
+    ///////////////////////////////////////////////////////////////////////////////////
+    void CollectFilesWithFunc()
+    {
+        // Will take a collection of dirs to visit, "basket" (list) to collect all files
+        // and return array of collected files
+        var getFilesRec = Recursion.Func<Queue<string>, List<string>, string[]>(
+           (dirs, files, stack) =>
+           {
+               if (dirs.Any())
+               {
+                   stack.Exit(files.ToArray());
+               }
+               else
+               {
+                   string dir = dirs.Dequeue();
+
+                   files.AddRange(Directory.GetFiles(dir));
+                   dirs.AddRange(Directory.GetDirectories(dir));
+
+                   stack.Push(dirs, files);
+               }
+           });
+
+        var getFiles = new Func<string, string[]>(path => getFilesRec(new Queue<string>(new[] { path }), new List<string>()));
+
+        var dirFiles = getFiles(userDocsDir);
+    }
+    ///////////////////////////////////////////////////////////////////////////////////
+    void CollectFilesWithCall()
+    {
+        // similar to code above except that it collects the files to the external "basket"
+        // and this one off routine is invoked immediately and once without storing it in the variable.
+        var files = new List<string>();
+
+        Recursion.Call(new Queue<string>().Add(userDocsDir),
+                      (Queue<string> dirs, StackContext stack) =>
+                      {
+                          if (dirs.Any())
+                          {
+                              string dir = dirs.Dequeue();
+
+                              files.AddRange(Directory.GetFiles(dir));
+                              dirs.AddRange(Directory.GetDirectories(dir));
+
+                              stack.Push(dirs);
+                          }
+                          else
+                              stack.Exit();
+                      });
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////
 }
 
-static class Extensions
+static class SamplesExtensions
 {
     public static bool Any<T>(this Queue<T> collection) => collection.Count > 0;
 
@@ -201,10 +201,17 @@ static class Extensions
         return collection;
     }
 
-    public static void EnqueueRange<T>(this Queue<T> collection, IEnumerable<T> items)
+    public static Queue<T> AddRange<T>(this Queue<T> collection, IEnumerable<T> items)
     {
         foreach (T item in items)
             collection.Enqueue(item);
+        return collection;
+    }
+
+    public static Queue<T> Add<T>(this Queue<T> collection, T item)
+    {
+        collection.Enqueue(item);
+        return collection;
     }
 
     public static string ExpandEnvVars(this string text)
