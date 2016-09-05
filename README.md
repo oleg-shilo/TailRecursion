@@ -22,6 +22,47 @@ Interception technique: http://codereview.stackexchange.com/questions/57839/tram
 Thus for a single one off trampolined recursion it's arguably preferred to do it directly in the code where you need to use it. However if the software solution requires more often recursive behaviour developers can benefit form some sort of generic trampolined recursion solution so there is no need to setup the trampolined infrastructure again and again. This solution is an attempt to bring such a solution to the developers. 
  
 # Solution 
-The objective of this exercise was to have a generic tailed recursion that would deterministically emit tailed calls while preserving as much as possible the raw C# recursion syntax. The solution itself is extremely simple and the core routine is a single method of ~20 lines of code. The rest is a call context infrastructure and set of convenient API entry points providing convenient signature obverloads.
+The objective of this exercise was to have a generic tailed recursion that would deterministically emit tailed calls while preserving as much as possible the raw C# recursion syntax. The solution itself is extremely simple and the core routine is a single method of ~20 lines of code. The rest is a call context infrastructure and set of convenient API entry points providing convenient signature overloads.
+
+The following is a canonical implementation of Fibonacci sequence with raw recursion in C#:
+
+```C#
+Func<int, int, int, int> fib_iter = null;
+fib_iter = (fnext, f, count) =>
+            {
+                if (count == 0)
+                    return f;
+                else
+                    return fib_iter(fnext + f, fnext, count - 1);
+            };
+
+
+Func<int, int> fib = n => fib_iter(1, 0, n);
+
+fib(5);
+```
+The implementation above would lead to the stack overflow providing the number of fib_iter calls large enough to flood the stack.
+
+The following is the same solution but with the user code tail optimization (trampolined recursion):
+```C#
+var fib_iter = Recursion.Func<int, int, int, int>(
+                         (fnext, f, count, stack) =>
+                         {
+                             if (count == 0)
+                                 stack.Exit(f);
+                             else
+                                 stack.Push(fnext + f, fnext, count - 1);
+                         });
+                         
+Func<int, int> fib = n => fib_iter(1, 0, n);
+
+fib(5);
+``` 
+
+
+
+
+
+
 
 ... _in progress_ ...
