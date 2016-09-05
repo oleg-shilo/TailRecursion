@@ -57,11 +57,49 @@ Func<int, int> fib = n => fib_iter(1, 0, n);
 
 fib(5);
 ``` 
+And the non-lambda code is as below:
+```C#
+void FibImpl(int fnext, int f, int count, StackContext stack)
+{
+    if (count == 0)
+        stack.Exit(f);
+    else
+        stack.Push(fnext + f, fnext, count - 1);
+}
 
+void TailedRecursionWithMethod()
+{
+    var fib_iter = Recursion.Func<int, int, int, int>(FibImpl);
 
+    Func<int, int> fib = n => fib_iter(1, 0, n);
 
-
-
-
+    fib(5);
+}
+```
+The code sample demonstrates that the overall raw-recursion code layout stays the same except a new extra argument `StackContext` is injected in the implementation signature. This argument is used to schedule the next non-blocking call to the function primary function (the actual recursive function):
+```C#
+stack.Push(fnext + f, fnext, count - 1);
+//instead of 
+return FibImpl(fnext + f, fnext, count - 1);
+```
+And the very same recursion stack context object is used to indicate the full completion of the calculation:
+```C#
+stack.Exit(f);
+//instead of 
+return f;
+```
+It would be interesting if C# follows the steps of F# and implements explicit recursion keyword (e.g. `tail`) to force tail-call optimization upon user request from code. The ideal approach for this wouold be a syntactic sugar (as many other C# syntax features). Something like this:
+```C#
+tail void Fib(int fnext, int f, int count)
+{
+    if (count == 0)
+        yield return f;
+    else
+        tail Fib(fnext + f, fnext, count - 1);
+}
+...
+Func<int, int> fib = n => Fib(1, 0, n);
+fib(5);
+```
 
 ... _in progress_ ...
