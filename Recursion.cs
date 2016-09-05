@@ -1,7 +1,7 @@
 #region Licence...
 /*
 The MIT License (MIT)
-Copyright (c) 2014 Oleg Shilo
+Copyright (c) 2016 Oleg Shilo
 Permission is hereby granted, 
 free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -156,6 +156,35 @@ namespace TailCall
 
             context.IsFirstCall = false;
             return (T)context.Result;
+        }
+    }
+
+    public static class Extensions
+    {
+        public static List<T> AppendRange<T>(this List<T> collection, IEnumerable<T> items)
+        {
+            collection.AddRange(items);
+            return collection;
+        }
+
+        public static List<T> Append<T>(this List<T> collection, T item)
+        {
+            collection.Add(item);
+            return collection;
+        }
+
+        public static T Pop<T>(this IList<T> collection) where T : class
+        {
+            lock (collection)
+            {
+                if (collection.Count > 0)
+                {
+                    T result = collection[0];
+                    collection.RemoveAt(0);
+                    return result;
+                }
+                return null;
+            }
         }
     }
 
