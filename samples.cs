@@ -18,6 +18,7 @@ public class ScriptClass
 
     public static void Main()
     {
+        FindFirstNestedAttachment();
     }
 
     #region
@@ -184,6 +185,41 @@ public class ScriptClass
                           else
                               stack.Exit();
                       });
+    }
+    ///////////////////////////////////////////////////////////////////////////////////
+    class Message
+    {
+        public Message Add(Message msg) { Messages.Add(msg); return this; }
+        public Message AddAttachment(string file) { this.Attachments.Add(file); return this; }
+        public List<Message> Messages = new List<Message>();
+        public List<string> Attachments = new List<string>();
+    }
+
+    static void FindFirstNestedAttachment()
+    {
+var message = new Message().Add(new Message())
+						   .Add(new Message())
+						   .Add(new Message().Add(new Message())
+											 .Add(new Message().AddAttachment("manual.pdf"))
+											 .Add(new Message()))
+						   .Add(new Message());
+
+var messages = new List<Message>().Append(message);
+
+var file = Recursion.Func<string>(
+					 stack =>
+					 {
+						 if (messages.Any())
+						 {
+							 Message msg = messages.Pop();
+
+							 if (msg.Attachments.Any())
+								 stack.Exit(msg.Attachments.First());
+							 else
+								 stack.Push(messages.AppendRange(msg.Messages));
+						 }
+					 })();
+WriteLine(file);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////

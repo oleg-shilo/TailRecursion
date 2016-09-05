@@ -1,11 +1,11 @@
 # Tail Recursion
 
 # Background 
-The _Tail Recursion_ problem is not new. As any recursion it represents very intuitive and powerful execution paradigm, which is unfortunately associated with a very serious flaw - potential stack overflow. _Tail Recursion_ on the other hand is a special case of recursion that can be optimized in such a way that stack overflow can be completely eliminated. Some languages recognise this and offer "tail call" optimization in one or another form. Some of them do tail call optimization always (e.g.  Scheme), others under certain conditions (e.g. C#) and some do not support it at all (e.g. Python).
+The _Tail Recursion_ challenge is not new. As any recursion it represents very intuitive and powerful execution paradigm, which unfortunately has a very serious flaw - potential stack overflow. _Tail Recursion_ on the other hand is a special case of recursion that can be optimized in such a way that stack overflow can be completely eliminated. Some languages recognise this and offer "tail call" optimization in one or another form. Some of them do tail call optimization always (e.g.  Scheme), others under certain conditions (e.g. C#) and some do not support it at all (e.g. Python).
 
-CLR perfectly capable of "tailing" the calls. It processes a special IL instruction for this - `.tail`. F# interpreter/compiler takes advantage of the `.tail` instruction by allowing deterministically request tailing from the user code with the special keyword `rec`. Unfortunately C# doesn't follow the suite. While it perfectly optimises tail-compatible routines in release mode (due to the higher level of optimization associated with the release builds) it doesn't do it for debug mode and even when it does it is still not guaranteed. Thus while C# is definitely capable of tail optimization for all practical reasons it should be treated as a language that is cannot handle tail recursion at compiler level. Thus this non-deterministic nature of C# tail optimization support completely diminishes its benefits.
+CLR perfectly capable of "tailing" the calls. It processes a special IL instruction for this - `.tail`. F# interpreter/compiler takes advantage of the `.tail` instruction by allowing deterministically request tailing from the user code with the special keyword `rec`. Unfortunately C# doesn't follow the suite. While it perfectly optimises tail-compatible routines in release mode (due to the higher level of optimization associated with the release builds) it doesn't do it for debug mode. And even in release mode the optimization is still not guaranteed. Thus while C# is definitely capable of tail optimization for all practical reasons it should be treated as a language that is cannot handle tail recursion at compiler level. In other words this non-deterministic nature of C# tail optimization completely diminishes its benefits.
 
-_The history of .tail and C# is quite interesting. MS was pressed by the developers to implement tail optimization but it fully rejected the proposals due to the implementation difficulties and inability to guarantee no performance cost. From now and then there were reports of "sighting" C# tail optimization either specifically on x64 targets or under other circumstances. Thus currently (Sep 2016) C#6 can definitely compile and optimize tail recursive routines at least in Release configuration for AnyCPU built on x64 machines. But without an official well documented .tail support it is still an exotic feature that hart to rely on._ 
+_The history of .tail and C# is quite interesting. MS was pressed by the developers to implement tail optimization but it fully rejected the proposals due to the implementation difficulties and inability to guarantee no performance cost. From now and then there were reports of "sighting" C# tail optimization either specifically on x64 targets or under some other circumstances. Thus currently (Sep 2016) C#6 can definitely compile and optimize tail recursive routines at least in Release configuration for AnyCPU built on x64 machines. But without an official well documented .tail support it is still an exotic feature that is hard to rely on._ 
 
 Wikipedia has very good article about the matter: https://en.wikipedia.org/wiki/Tail_call
 
@@ -19,10 +19,10 @@ http://www.thomaslevesque.com/2011/09/02/tail-recursion-in-c/
 http://community.bartdesmet.net/blogs/bart/archive/2009/11/08/jumping-the-trampoline-in-c-stack-friendly-recursion.aspx
 Interception technique: http://codereview.stackexchange.com/questions/57839/trampoline-interceptor
 
-Thus for a single one off trampolined recursion it's arguably preferred to do it directly in the code where you need to use it. However if the software solution requires more often recursive behaviour developers can benefit form some sort of generic trampolined recursion solution so there is no need to setup the trampolined infrastructure again and again. This solution is an attempt to bring such a solution to the developers. 
+Thus for a single one off trampolined recursion it's arguably preferred to do it directly in the code, in the places where you need to use it. However if more frequent recursive behaviour is required developers can benefit form some sort of generic reusable trampolined recursion solution so there is no need to setup the trampolined infrastructure again and again. This project is an attempt to bring such a solution to the developers. 
  
 # Solution 
-The objective of this exercise was to have a generic tailed recursion that would deterministically emit tailed calls while preserving as much as possible the raw C# recursion syntax. The solution itself is extremely simple and the core routine is a single method of ~20 lines of code. The rest is a call context infrastructure and set of convenient API entry points providing convenient signature overloads.
+The objective of this effort is to have a generic tailed recursion that would deterministically emit tailed calls while preserving as much as possible the raw C# recursion syntax. The solution itself is extremely simple and the core routine is a single method of ~20 lines of code. The rest is a call context infrastructure and set of convenient API entry points providing signatures overloads.
 
 The following is a canonical implementation of Fibonacci sequence with raw recursion in C#:
 
@@ -42,7 +42,7 @@ fib(5);
 ```
 The implementation above would lead to the stack overflow providing the number of fib_iter calls large enough to flood the stack.
 
-The following is the same solution but with the user code tail optimization (trampolined recursion):
+The code below is the same solution but with the user code tail optimization (trampolined recursion):
 ```C#
 var fib_iter = Recursion.Func<int, int, int, int>(
                          (fnext, f, count, stack) =>
@@ -76,7 +76,7 @@ void TailedRecursionWithMethod()
     fib(5);
 }
 ```
-The code sample demonstrates that the overall raw-recursion code layout stays the same except a new extra argument `StackContext` is injected in the implementation signature. This argument is used to schedule the next non-blocking call to the function primary function (the actual recursive function):
+The code sample demonstrates that the overall raw-recursion code layout stays the same except a new extra argument `StackContext` that is injected in the signature. This argument is used to setup the next non-blocking call to the primary function (the actual recursive function):
 ```C#
 stack.Push(fnext + f, fnext, count - 1);
 //instead of 
@@ -88,7 +88,7 @@ stack.Exit(f);
 //instead of 
 return f;
 ```
-It would be interesting if C# follows the steps of F# and implements an explicit recursion keyword (e.g. `rec`) to force tail-call optimization upon user request from code. The ideal approach for this wouold be a syntactic sugar (as with many current C# syntax features). Something like this:
+It would be interesting to see/imagine the recursive syntax if C# followed F# foot steps and implemented an explicit recursion keyword (e.g. `rec`) to force tail-call optimization upon user request from code. The ideal approach for this would be a syntactic sugar for converting recursive syntax (as below) into trampolined method IL (as FibImpl) under the hood.
 ```C#
 rec void Fib(int fnext, int f, int count)
 {
@@ -144,3 +144,38 @@ Recursion.Call(new Queue<string>().Add(userDocsDir),
                        stack.Exit();
                });
 ```
+The module also contains a few convenience extension methods for `List<T>` to allow fluent interface:
+```C#
+class Message
+{
+	public Message Add(Message msg) { Messages.Add(msg); return this; }
+	public Message AddAttachment(string file) { this.Attachments.Add(file); return this; }
+	public List<Message> Messages = new List<Message>();
+	public List<string> Attachments = new List<string>();
+}
+...
+var message = new Message().Add(new Message())
+						   .Add(new Message())
+						   .Add(new Message().Add(new Message())
+											 .Add(new Message().AddAttachment("manual.pdf"))
+											 .Add(new Message()))
+						   .Add(new Message());
+...
+//find first nested message with attachment
+var messages = new List<Message>().Append(message);
+
+var file = Recursion.Func<string>(
+					 stack =>
+					 {
+						 if (messages.Any())
+						 {
+							 Message msg = messages.Pop();
+
+							 if (msg.Attachments.Any())
+								 stack.Exit(msg.Attachments.First());
+							 else
+								 stack.Push(messages.AppendRange(msg.Messages));
+						 }
+					 })();						   
+```
+ 
