@@ -12,12 +12,12 @@ Wikipedia has very good article about the matter: https://en.wikipedia.org/wiki/
 # Purpose
 Any language that doesn't support tail-call optimization has to rely on user level loop-based technique which is called "trampolining". In fact some compilers implement this very technique under the hood. Though when compiler offers no support for this it is up to developer to implement the technique directly in the code.
 
-Fortunately trampolined recursion algorithm is very simple and described in the numerous online resources:
-https://en.wikipedia.org/wiki/Tail_call
-https://qualityofdata.com/2012/02/03/how-to-run-most-of-the-recursive-functions-iteratively/
-http://www.thomaslevesque.com/2011/09/02/tail-recursion-in-c/
-http://community.bartdesmet.net/blogs/bart/archive/2009/11/08/jumping-the-trampoline-in-c-stack-friendly-recursion.aspx
-Interception technique: http://codereview.stackexchange.com/questions/57839/trampoline-interceptor
+Fortunately, the trampolined recursion algorithm is very simple and described in the numerous online resources:
+- https://en.wikipedia.org/wiki/Tail_call
+- https://qualityofdata.com/2012/02/03/how-to-run-most-of-the-recursive-functions-iteratively/
+- http://www.thomaslevesque.com/2011/09/02/tail-recursion-in-c/
+- http://community.bartdesmet.net/blogs/bart/archive/2009/11/08/jumping-the-trampoline-in-c-stack-friendly-recursion.aspx
+- Interception technique: http://codereview.stackexchange.com/questions/57839/trampoline-interceptor
 
 Thus for a single one off trampolined recursion it's arguably preferred to do it directly in the code, in the places where you need to use it. However if more frequent recursive behaviour is required developers can benefit form some sort of generic reusable trampolined recursion solution so there is no need to setup the trampolined infrastructure again and again. This project is an attempt to bring such a solution to the developers. 
  
